@@ -1,45 +1,107 @@
-const express = require('express');
-const router = express.Router();
-const ordersDB = require('../connection');
+var express = require('express');
+var router = express.Router();
+const knex = require('knex')
 
-/* GET home page. */
-router.get('/', async (req, res, next) => {
-    try {
-        const tasks = await ordersDB('commande');
-        res.json({ data: tasks });
-    } catch (error) {
-        console.error(error);
-        next(error);
+
+//connectiondb
+let db = knex({
+    client: 'mysql',
+    connection: {
+        host: process.env.MARIADB_HOST,
+        port: 3306,
+        user: process.env.MARIADB_USER,
+        password: process.env.MARIADB_PASSWORD,
+        database: process.env.MARIADB_DATABASE
     }
 });
 
-router.post('/', async (req, res, next) => {
-    try {
-        const { content, user_id } = req.body;
-        await ordersDB('cammande').insert({ content, user_id });
-        res.sendStatus(201);
-    } catch (error) {
-        console.error(error);
-        next(error);
-    }
-});
+router.route('/')
+    .get(async(req, res, next) => {
+        try {
+            const result = await db('commande');
 
-router.get('/:id', async (req, res, next) => {
-    try {
-        const commande = await ordersDB('commande').where('id', req.params.id).first()
-        if (!commande) {
-            res.status(404).json({
-                code: '404',
-                type: 'error',
-                message: `Order with id : ${req.params.id} not found`
-            });
-        } else {
-            res.json({data: commande});
+            if (!result) {
+
+                res.status(404).json({
+                    "type": "error",
+                    "error": 404,
+                    "message": "ressource non disponible : /orders/" + req.params.id
+                });
+            } else {
+                res.json(result);
+            }
+        } catch (error) {
+            res.json({
+                "type": "error",
+                "error": 500,
+                "message": "Erreur interne du serveur"
+            })
+
         }
-    } catch (error) {
-        console.error(error)
-        next(error);
-    }
+
+    })
+
+router.route('/:id')
+    .get(async(req, res, next) => {
+        try {
+            const result = await db('commande').where('id', req.params.id).first();
+
+            if (!result) {
+
+                res.status(404).json({
+                    "type": "error",
+                    "error": 404,
+                    "message": "ressource non disponible : /orders/" + req.params.id
+                });
+            } else {
+                res.json(result);
+            }
+        } catch (error) {
+            res.json({
+                "type": "error",
+                "error": 500,
+                "message": "Erreur interne du serveur"
+            })
+
+        }
+
+    })
+
+router.route('/modified/:id')
+    .put(async(req, res, next) => {
+        try {
+            const result = await db('commande').where('id', req.params.id).update({ nom: req.body.nom, mail: req.body.email, livraison: new Date(req.body.livraison) });
+
+            if (!result) {
+
+                res.status(404).json({
+                    "type": "error",
+                    "error": 404,
+                    "message": "ressource non disponible : /orders/" + req.params.id
+                });
+            } else {
+                res.json(result);
+            }
+        } catch (error) {
+            res.status(500).json({
+                "type": "error",
+                "error": 500,
+                "message": "Erreur interne du serveur"
+            })
+
+        }
+
+    })
+
+
+router.route("*").all(async(req, res, next) => {
+
+    res.status(405).json({
+        "type": "error",
+        "error": 405,
+        "message": "la méthode contenue dans la requête reçue n'est pas" +
+            "autorisée sur l 'uri indiquée ; cette uri est cependant valide ,"
+    })
 });
 
 module.exports = router;
