@@ -55,16 +55,23 @@ router.route('/:id')
     .get(async (req, res, next) => {
         try {
             const result = await db('commande').where('id', req.params.id).first();
-
             if (!result) {
-
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-                res.json(result);
+
+                let json = {
+                    "type": "ressource",
+                    "order": result,
+                    "links": {
+                        "items": "/orders/" + req.params.id + "/items",
+                        "self": "/orders/" + req.params.id,
+                    }
+                }
+                res.json(json);
             }
         } catch (error) {
             res.json({
