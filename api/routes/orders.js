@@ -26,7 +26,7 @@ let db = knex({
 });
 
 router.route('/')
-    .get(async(req, res, next) => {
+    .get(async (req, res, next) => {
         try {
             const result = await db('commande');
 
@@ -52,7 +52,7 @@ router.route('/')
     })
 
 router.route('/:id')
-    .get(async(req, res, next) => {
+    .get(async (req, res, next) => {
         try {
             const result = await db('commande').where('id', req.params.id).first();
 
@@ -77,8 +77,34 @@ router.route('/:id')
 
     })
 
+router.route('/:id/items')
+    .get(async (req, res, next) => {
+        try {
+            const result = await db('item').where('command_id', req.params.id);
+
+            if (!result) {
+
+                res.status(404).json({
+                    "type": "error",
+                    "error": 404,
+                    "message": "ressource non disponible : /orders/" + req.params.id
+                });
+            } else {
+                res.json(result);
+            }
+        } catch (error) {
+            res.json({
+                "type": "error",
+                "error": 500,
+                "message": "Erreur interne du serveur"
+            })
+
+        }
+
+    })
+
 router.route('/modified/:id')
-    .put(async(req, res, next) => {
+    .put(async (req, res, next) => {
         try {
 
             //créer les schema de validation
@@ -95,20 +121,20 @@ router.route('/modified/:id')
                     "error": 404,
                     "message": "données non comforme : " + req.body.nom
                 });
-            } else if(email.error != null) {   
+            } else if (email.error != null) {
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "données non comforme : " + req.body.email
                 });
-            } else if (date.error != null){
+            } else if (date.error != null) {
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "données non comforme : " + req.body.livraison
                 });
-            // verifie l'id passé en paramètre si il est bien conforme au uuid 
-            }else if (uuid.error != null){
+                // verifie l'id passé en paramètre si il est bien conforme au uuid 
+            } else if (uuid.error != null) {
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
@@ -140,7 +166,7 @@ router.route('/modified/:id')
     })
 
 
-router.route("*").all(async(req, res, next) => {
+router.route("*").all(async (req, res, next) => {
 
     res.status(405).json({
         "type": "error",
