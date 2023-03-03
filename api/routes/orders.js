@@ -88,7 +88,13 @@ router.route('/:id/items')
                 "message": "ressource non disponible : /orders/" + req.params.id
             });
         } else {
-            res.json(result);
+            let jsonResult = {
+                "type": "collection",
+                "count": result.length,
+                "items": result
+            }
+
+            res.json(jsonResult);
         }
     } catch (error) {
         res.json({
