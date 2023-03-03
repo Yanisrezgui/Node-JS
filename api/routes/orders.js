@@ -83,14 +83,19 @@ router.route('/:id/items')
             const result = await db('item').where('command_id', req.params.id);
 
             if (!result) {
-
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-                res.json(result);
+                let json = {
+                    "type": "collection",
+                    "count": result.length,
+                    "items": result
+                }
+
+                res.json(json)
             }
         } catch (error) {
             res.json({
@@ -98,9 +103,7 @@ router.route('/:id/items')
                 "error": 500,
                 "message": "Erreur interne du serveur"
             })
-
         }
-
     })
 
 router.route('/modified/:id')
