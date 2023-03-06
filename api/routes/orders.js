@@ -64,7 +64,11 @@ router.route('/:id')
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-
+                if (req.query.embed === "items" ) {
+                    const resultItem = await db('item').where('command_id', req.params.id);
+                    result.items = resultItem;
+                }
+                
                 let json = {
                     "type": "ressource",
                     "order": result,
