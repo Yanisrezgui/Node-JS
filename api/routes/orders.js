@@ -3,15 +3,10 @@ var router = express.Router();
 const knex = require('knex');
 const Joi = require('joi');
 
-
 const nameSchema = Joi.string().alphanum().min(3).max(30).required();
 const emailSchema = Joi.string().email().required();
 const dateSchema = Joi.date().iso().required();
 const uuidSchema = Joi.string().guid().required();
-
-
-
-
 
 //connectiondb
 let db = knex({
@@ -62,6 +57,10 @@ router.route('/:id')
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
+                if (req.query.embed === "items" ) {
+                    const resultItem = await db('item').where('command_id', req.params.id);
+                    result.items = resultItem;
+                }                
 
                 let json = {
                     "type": "ressource",
@@ -71,6 +70,7 @@ router.route('/:id')
                         "self": "/orders/" + req.params.id,
                     }
                 }
+
                 res.json(json);
             }
         } catch (error) {
