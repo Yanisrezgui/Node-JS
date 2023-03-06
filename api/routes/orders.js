@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 const knex = require('knex');
 const Joi = require('joi');
+const { v4: uuidv4 } = require('uuid'); // importe la fonction uuid()
+
 
 
 const nameSchema = Joi.string().alphanum().min(3).max(30).required();
@@ -174,6 +176,40 @@ router.route('/modified/:id')
         }
     })
 
+router.route('/')
+    .post(async (req, res, next) => {
+        try {
+            const id = uuidv4(); 
+            db('commande').insert({ 
+                id:id, 
+                nom: req.body.client_name, 
+                mail: req.body.client_mail, 
+                created_at: new Date(), 
+                livraison: new Date(req.body.delivery.date + " " + req.body.delivery.time)
+            })
+            .then(() => {
+                let json = {
+                    "order": {
+                        "client_name": req.body.client_name,
+                        "client_mail": req.body.client_mail,
+                        "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
+                        "id": id,
+                        "total_amount": 0
+                    },
+                }
+                res.location('/orders/' + id)
+                res.status(201).json(json);
+            }).catch((err) => {
+                res.json(err);
+            })
+        } catch (error) {
+            res.status(500).json({
+                "type": "error",
+                "error": 500,
+                "message": "Erreur interne du serveur"
+            })
+        }
+    })
 
 router.route("*").all(async (req, res, next) => {
 
