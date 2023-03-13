@@ -40,7 +40,31 @@ router.route('/')
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-                res.json(result);
+
+
+                const orderResult = result.map(order => {
+                    return {
+                        "order": {
+                            "id": order.id,
+                            "client_name": order.nom,
+                            "order_date": order.created_at,
+                            "delivery_date": order.livraison,
+                            "status": order.status
+                        },
+                        "links": {
+                            "self": { "href": "orders/" + order.id }
+                        }
+                    }
+                })
+
+                let jsonResult = {
+                    "type": "collection",
+                    "count": result.length,
+                    "orders": orderResult
+
+                }
+
+                res.json(jsonResult);
             }
         } catch (error) {
             res.json({
@@ -61,14 +85,14 @@ router.route('/:id')
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
-                    "message": "ressource non disponible : /orders/" + req.params.id
+                    "message": "ressource non disponible : /orders/" + req.params.id,
                 });
             } else {
-                if (req.query.embed === "items" ) {
+                if (req.query.embed === "items") {
                     const resultItem = await db('item').where('command_id', req.params.id);
                     result.items = resultItem;
                 }
-                
+
                 let json = {
                     "type": "ressource",
                     "order": result,
@@ -183,29 +207,29 @@ router.route('/modified/:id')
 router.route('/')
     .post(async (req, res, next) => {
         try {
-            const id = uuidv4(); 
-            db('commande').insert({ 
-                id:id, 
-                nom: req.body.client_name, 
-                mail: req.body.client_mail, 
-                created_at: new Date(), 
+            const id = uuidv4();
+            db('commande').insert({
+                id: id,
+                nom: req.body.client_name,
+                mail: req.body.client_mail,
+                created_at: new Date(),
                 livraison: new Date(req.body.delivery.date + " " + req.body.delivery.time)
             })
-            .then(() => {
-                let json = {
-                    "order": {
-                        "client_name": req.body.client_name,
-                        "client_mail": req.body.client_mail,
-                        "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
-                        "id": id,
-                        "total_amount": 0
-                    },
-                }
-                res.location('/orders/' + id)
-                res.status(201).json(json);
-            }).catch((err) => {
-                res.json(err);
-            })
+                .then(() => {
+                    let json = {
+                        "order": {
+                            "client_name": req.body.client_name,
+                            "client_mail": req.body.client_mail,
+                            "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
+                            "id": id,
+                            "total_amount": 0
+                        },
+                    }
+                    res.location('/orders/' + id)
+                    res.status(201).json(json);
+                }).catch((err) => {
+                    res.json(err);
+                })
         } catch (error) {
             res.status(500).json({
                 "type": "error",
