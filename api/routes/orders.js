@@ -61,7 +61,6 @@ router.route('/')
                     "type": "collection",
                     "count": result.length,
                     "orders": orderResult
-
                 }
 
                 res.json(jsonResult);
