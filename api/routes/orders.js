@@ -4,10 +4,16 @@ const knex = require('knex');
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid'); // importe la fonction uuid()
 
+
+
 const nameSchema = Joi.string().alphanum().min(3).max(30).required();
 const emailSchema = Joi.string().email().required();
 const dateSchema = Joi.date().iso().required();
 const uuidSchema = Joi.string().guid().required();
+
+
+
+
 
 //connectiondb
 let db = knex({
@@ -24,7 +30,16 @@ let db = knex({
 router.route('/')
     .get(async (req, res, next) => {
         try {
-            const result = await db('commande');
+            let query = db('commande');
+            if (req.query.c) {
+                query = query.where('mail', req.query.c);
+            }
+            let orderByColumn = 'livraison'; // par défaut, on trie selon la date
+            if (req.query.sort === 'amount') {
+                orderByColumn = 'montant_total'; // si le paramètre sort vaut "amount", on trie selon le montant total
+            }
+            const result = await query.orderBy(orderByColumn, 'desc');
+            console.log(query)
             if (!result) {
                 res.status(404).json({
                     "type": "error",
@@ -60,17 +75,11 @@ router.route('/')
                 "type": "error",
                 "error": 500,
                 "message": "Erreur interne du serveur"
-<<<<<<< HEAD
             });
         }
     });
 
 
-=======
-            })
-        }
-    })
->>>>>>> b4f13b72bd6e06ac313a2615eef235d52fde9221
 
 router.route('/:id')
     .get(async (req, res, next) => {
@@ -96,7 +105,6 @@ router.route('/:id')
                         "self": "/orders/" + req.params.id,
                     }
                 }
-
                 res.json(json);
             }
         } catch (error) {
@@ -105,7 +113,9 @@ router.route('/:id')
                 "error": 500,
                 "message": "Erreur interne du serveur"
             })
+
         }
+
     })
 
 router.route('/:id/items')
@@ -139,11 +149,13 @@ router.route('/:id/items')
 router.route('/modified/:id')
     .put(async (req, res, next) => {
         try {
+
             //créer les schema de validation
             let name = nameSchema.validate(req.body.nom);
             let email = emailSchema.validate(req.body.email)
             let date = dateSchema.validate(req.body.livraison)
             let uuid = uuidSchema.validate(req.params.id)
+
 
             //regarde si les données du body sont conforme au schéma si non renvoie une erreur 404
             if (name.error != null) {
@@ -172,6 +184,7 @@ router.route('/modified/:id')
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
+
                 //requete put 
                 const result = await db('commande').where('id', req.params.id).update({ nom: req.body.nom, mail: req.body.email, livraison: new Date(req.body.livraison) });
 
