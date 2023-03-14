@@ -21,7 +21,7 @@ let db = knex({
     }
 });
 
-router.route('/:c?')
+router.route('/')
     .get(async (req, res, next) => {
         try {
             let query = db('commande');
@@ -34,8 +34,16 @@ router.route('/:c?')
                 orderByColumn = 'montant_total'; // si le paramètre sort vaut "amount", on trie selon le montant total
             }
 
+            if (req.query.page) {
+                let pageNumber = parseInt(req.query.page);
+                if (pageNumber > 1) {
+                    query = query.limit(10).offset(pageNumber * 10 + 1);
+                } else {
+                    query = query.limit(10)
+                }
+            }
+
             const result = await query.orderBy(orderByColumn, 'desc');
-            console.log(query)
             if (!result) {
                 res.status(404).json({
                     "type": "error",
@@ -61,6 +69,7 @@ router.route('/:c?')
                 let jsonResult = {
                     "type": "collection",
                     "count": result.length,
+                    "size": result.length,
                     "orders": orderResult
                 };
 
