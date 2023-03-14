@@ -4,16 +4,10 @@ const knex = require('knex');
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid'); // importe la fonction uuid()
 
-
-
 const nameSchema = Joi.string().alphanum().min(3).max(30).required();
 const emailSchema = Joi.string().email().required();
 const dateSchema = Joi.date().iso().required();
 const uuidSchema = Joi.string().guid().required();
-
-
-
-
 
 //connectiondb
 let db = knex({
@@ -27,31 +21,61 @@ let db = knex({
     }
 });
 
-router.route('/')
+router.route('/:c?')
     .get(async (req, res, next) => {
         try {
-            const result = await db('commande');
+            let query = db('commande');
+            if (req.query.c) {
+                query = query.where('mail', 'like', `%${req.query.c}%`);
+            }
+            
+            let orderByColumn = 'livraison'; // par défaut, on trie selon la date
+            if (req.query.sort === 'amount') {
+                orderByColumn = 'montant_total'; // si le paramètre sort vaut "amount", on trie selon le montant total
+            }
 
+            const result = await query.orderBy(orderByColumn, 'desc');
+            console.log(query)
             if (!result) {
-
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-                res.json(result);
+                const orderResult = result.map(order => {
+                    return {
+                        "order": {
+                            "id": order.id,
+                            "client_name": order.nom,
+                            "order_date": order.created_at,
+                            "delivery_date": order.livraison,
+                            "status": order.status
+                        },
+                        "links": {
+                            "self": { "href": "orders/" + order.id }
+                        }
+                    }
+                });
+
+                let jsonResult = {
+                    "type": "collection",
+                    "count": result.length,
+                    "orders": orderResult
+                };
+
+                res.json(jsonResult);
             }
         } catch (error) {
             res.json({
                 "type": "error",
                 "error": 500,
                 "message": "Erreur interne du serveur"
-            })
-
+            });
         }
+    });
 
-    })
+
 
 router.route('/:id')
     .get(async (req, res, next) => {
@@ -61,14 +85,14 @@ router.route('/:id')
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
-                    "message": "ressource non disponible : /orders/" + req.params.id
+                    "message": "ressource non disponible : /orders/" + req.params.id,
                 });
             } else {
-                if (req.query.embed === "items" ) {
+                if (req.query.embed === "items") {
                     const resultItem = await db('item').where('command_id', req.params.id);
                     result.items = resultItem;
                 }
-                
+
                 let json = {
                     "type": "ressource",
                     "order": result,
