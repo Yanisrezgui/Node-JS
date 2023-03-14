@@ -25,28 +25,25 @@ router.route('/')
     .get(async (req, res, next) => {
         try {
             const LIMIT = 10;
-
-            let query = db('commande');
+            let pageNumber = parseInt(req.query.page) || 1;
+            if (pageNumber < 1) {
+                pageNumber = 1;
+            }
+            const countResult = await db('commande').count('id as CNT').first();
+            const totalCount = parseInt(countResult.CNT);
+            const totalPages = Math.ceil(totalCount / LIMIT);
+            if (pageNumber > totalPages) {
+                pageNumber = totalPages;
+            }
+            const offset = (pageNumber - 1) * LIMIT;
+            let query = db('commande').orderBy('livraison', 'desc').limit(LIMIT).offset(offset);
             if (req.query.c) {
                 query = query.where('mail', 'like', `%${req.query.c}%`);
             }
-
-            let orderByColumn = 'livraison'; // par défaut, on trie selon la date
             if (req.query.sort === 'amount') {
-                orderByColumn = 'montant'; // si le paramètre sort vaut "amount", on trie selon le montant total
+                query = query.orderBy('montant', 'desc');
             }
-
-            if (req.query.page) {
-                let pageNumber = parseInt(req.query.page);
-                if (pageNumber > 1) {
-                    console.log(pageNumber);
-                    query = query.limit(LIMIT).offset((pageNumber-1) * 10 + 1);
-                } else {
-                    query = query.limit(LIMIT)
-                }
-            }
-
-            const result = await query.orderBy(orderByColumn, 'desc');
+            const result = await query;
             if (!result) {
                 res.status(404).json({
                     "type": "error",
@@ -68,15 +65,18 @@ router.route('/')
                         }
                     }
                 });
-                
-                const countResult = await db('commande').count('id as CNT').first();
-                let jsonResult = {
+                const jsonResult = {
                     "type": "collection",
-                    "count": countResult.CNT,
+                    "count": totalCount,
                     "size": LIMIT,
+                    "links": {
+                        "first": { "href": `/orders?page=1` },
+                        "prev": pageNumber > 1 ? { "href": `/orders?page=${pageNumber - 1}` } : null,
+                        "next": pageNumber < totalPages ? { "href": `/orders?page=${pageNumber + 1}` } : null,
+                        "last": { "href": `/orders?page=${totalPages}` }
+                    },
                     "orders": orderResult
                 };
-
                 res.json(jsonResult);
             }
         } catch (error) {
@@ -87,6 +87,7 @@ router.route('/')
             });
         }
     });
+
 
 
 
@@ -220,7 +221,7 @@ router.route('/modified/:id')
 router.route('/')
     .post(async (req, res, next) => {
         try {
-            const id = uuidv4(); 
+            const id = uuidv4();
             const itemData = req.body.items.map(item => {
                 return {
                     uri: item.uri,
@@ -231,33 +232,33 @@ router.route('/')
                 }
             })
             await db('item').insert(itemData);
-            db('commande').insert({ 
-                id:id, 
-                nom: req.body.client_name, 
-                mail: req.body.client_mail, 
-                created_at: new Date(), 
+            db('commande').insert({
+                id: id,
+                nom: req.body.client_name,
+                mail: req.body.client_mail,
+                created_at: new Date(),
                 livraison: new Date(req.body.delivery.date + " " + req.body.delivery.time)
             })
-            .then(() => {
-                let total = 0;
-                req.body.items.forEach(item => {
-                    total += item.q * item.price;
-                });
-                
-                let json = {
-                    "order": {
-                        "client_name": req.body.client_name,
-                        "client_mail": req.body.client_mail,
-                        "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
-                        "id": id,
-                        "total_amount": total
-                    },
-                }
-                res.location('/orders/' + id)
-                res.status(201).json(json);
-            }).catch((err) => {
-                res.json(err);
-            })
+                .then(() => {
+                    let total = 0;
+                    req.body.items.forEach(item => {
+                        total += item.q * item.price;
+                    });
+
+                    let json = {
+                        "order": {
+                            "client_name": req.body.client_name,
+                            "client_mail": req.body.client_mail,
+                            "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
+                            "id": id,
+                            "total_amount": total
+                        },
+                    }
+                    res.location('/orders/' + id)
+                    res.status(201).json(json);
+                }).catch((err) => {
+                    res.json(err);
+                })
         } catch (error) {
             res.status(500).json({
                 "type": "error",
