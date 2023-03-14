@@ -37,7 +37,8 @@ router.route('/')
             if (req.query.page) {
                 let pageNumber = parseInt(req.query.page);
                 if (pageNumber > 1) {
-                    query = query.limit(10).offset(pageNumber * 10 + 1);
+                    console.log(pageNumber);
+                    query = query.limit(10).offset((pageNumber-1) * 10 + 1);
                 } else {
                     query = query.limit(10)
                 }
