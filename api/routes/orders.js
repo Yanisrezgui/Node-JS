@@ -30,18 +30,23 @@ let db = knex({
 router.route('/')
     .get(async (req, res, next) => {
         try {
-            const result = await db('commande');
-
+            let query = db('commande');
+            if (req.query.c) {
+                query = query.where('mail', req.query.c);
+            }
+            let orderByColumn = 'livraison'; // par défaut, on trie selon la date
+            if (req.query.sort === 'amount') {
+                orderByColumn = 'montant'; // si le paramètre sort vaut "amount", on trie selon le montant total
+            }
+            const result = await query.orderBy(orderByColumn, 'desc');
+            console.log(query)
             if (!result) {
-
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-
-
                 const orderResult = result.map(order => {
                     return {
                         "order": {
@@ -55,13 +60,13 @@ router.route('/')
                             "self": { "href": "orders/" + order.id }
                         }
                     }
-                })
+                });
 
                 let jsonResult = {
                     "type": "collection",
                     "count": result.length,
                     "orders": orderResult
-                }
+                };
 
                 res.json(jsonResult);
             }
@@ -70,11 +75,11 @@ router.route('/')
                 "type": "error",
                 "error": 500,
                 "message": "Erreur interne du serveur"
-            })
-
+            });
         }
+    });
 
-    })
+
 
 router.route('/:id')
     .get(async (req, res, next) => {
