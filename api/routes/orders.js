@@ -68,11 +68,11 @@ router.route('/')
                 const jsonResult = {
                     "type": "collection",
                     "count": totalCount,
-                    "size": LIMIT,
+                    "size": result.length,
                     "links": {
                         "first": { "href": `/orders?page=1` },
-                        "prev": pageNumber > 1 ? { "href": `/orders?page=${pageNumber - 1}` } : null,
-                        "next": pageNumber < totalPages ? { "href": `/orders?page=${pageNumber + 1}` } : null,
+                        "prev": pageNumber > 1 ? { "href": `/orders?page=${pageNumber - 1}` } : "aucune page disponible",
+                        "next": pageNumber < totalPages ? { "href": `/orders?page=${pageNumber + 1}` } : "aucune page disponible",
                         "last": { "href": `/orders?page=${totalPages}` }
                     },
                     "orders": orderResult
