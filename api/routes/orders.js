@@ -207,29 +207,44 @@ router.route('/modified/:id')
 router.route('/')
     .post(async (req, res, next) => {
         try {
-            const id = uuidv4();
-            db('commande').insert({
-                id: id,
-                nom: req.body.client_name,
-                mail: req.body.client_mail,
-                created_at: new Date(),
+            const id = uuidv4(); 
+            const itemData = req.body.items.map(item => {
+                return {
+                    uri: item.uri,
+                    libelle: item.name,
+                    tarif: item.price,
+                    quantite: item.q,
+                    command_id: id
+                }
+            })
+            await db('item').insert(itemData);
+            db('commande').insert({ 
+                id:id, 
+                nom: req.body.client_name, 
+                mail: req.body.client_mail, 
+                created_at: new Date(), 
                 livraison: new Date(req.body.delivery.date + " " + req.body.delivery.time)
             })
-                .then(() => {
-                    let json = {
-                        "order": {
-                            "client_name": req.body.client_name,
-                            "client_mail": req.body.client_mail,
-                            "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
-                            "id": id,
-                            "total_amount": 0
-                        },
-                    }
-                    res.location('/orders/' + id)
-                    res.status(201).json(json);
-                }).catch((err) => {
-                    res.json(err);
-                })
+            .then(() => {
+                let total = 0;
+                req.body.items.forEach(item => {
+                    total += item.q * item.price;
+                });
+                
+                let json = {
+                    "order": {
+                        "client_name": req.body.client_name,
+                        "client_mail": req.body.client_mail,
+                        "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
+                        "id": id,
+                        "total_amount": total
+                    },
+                }
+                res.location('/orders/' + id)
+                res.status(201).json(json);
+            }).catch((err) => {
+                res.json(err);
+            })
         } catch (error) {
             res.status(500).json({
                 "type": "error",
