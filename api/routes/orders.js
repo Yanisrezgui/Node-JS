@@ -4,16 +4,10 @@ const knex = require('knex');
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid'); // importe la fonction uuid()
 
-
-
 const nameSchema = Joi.string().alphanum().min(3).max(30).required();
 const emailSchema = Joi.string().email().required();
 const dateSchema = Joi.date().iso().required();
 const uuidSchema = Joi.string().guid().required();
-
-
-
-
 
 //connectiondb
 let db = knex({
@@ -31,17 +25,13 @@ router.route('/')
     .get(async (req, res, next) => {
         try {
             const result = await db('commande');
-
             if (!result) {
-
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-
-
                 const orderResult = result.map(order => {
                     return {
                         "order": {
@@ -71,9 +61,7 @@ router.route('/')
                 "error": 500,
                 "message": "Erreur interne du serveur"
             })
-
         }
-
     })
 
 router.route('/:id')
@@ -100,6 +88,7 @@ router.route('/:id')
                         "self": "/orders/" + req.params.id,
                     }
                 }
+
                 res.json(json);
             }
         } catch (error) {
@@ -108,9 +97,7 @@ router.route('/:id')
                 "error": 500,
                 "message": "Erreur interne du serveur"
             })
-
         }
-
     })
 
 router.route('/:id/items')
@@ -144,13 +131,11 @@ router.route('/:id/items')
 router.route('/modified/:id')
     .put(async (req, res, next) => {
         try {
-
             //créer les schema de validation
             let name = nameSchema.validate(req.body.nom);
             let email = emailSchema.validate(req.body.email)
             let date = dateSchema.validate(req.body.livraison)
             let uuid = uuidSchema.validate(req.params.id)
-
 
             //regarde si les données du body sont conforme au schéma si non renvoie une erreur 404
             if (name.error != null) {
@@ -179,7 +164,6 @@ router.route('/modified/:id')
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-
                 //requete put 
                 const result = await db('commande').where('id', req.params.id).update({ nom: req.body.nom, mail: req.body.email, livraison: new Date(req.body.livraison) });
 
