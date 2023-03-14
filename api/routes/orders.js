@@ -24,6 +24,8 @@ let db = knex({
 router.route('/')
     .get(async (req, res, next) => {
         try {
+            const LIMIT = 10;
+
             let query = db('commande');
             if (req.query.c) {
                 query = query.where('mail', 'like', `%${req.query.c}%`);
@@ -38,9 +40,9 @@ router.route('/')
                 let pageNumber = parseInt(req.query.page);
                 if (pageNumber > 1) {
                     console.log(pageNumber);
-                    query = query.limit(10).offset((pageNumber-1) * 10 + 1);
+                    query = query.limit(LIMIT).offset((pageNumber-1) * 10 + 1);
                 } else {
-                    query = query.limit(10)
+                    query = query.limit(LIMIT)
                 }
             }
 
@@ -66,11 +68,12 @@ router.route('/')
                         }
                     }
                 });
-
+                
+                const countResult = await db('commande').count('id as CNT').first();
                 let jsonResult = {
                     "type": "collection",
-                    "count": result.length,
-                    "size": result.length,
+                    "count": countResult.CNT,
+                    "size": LIMIT,
                     "orders": orderResult
                 };
 
