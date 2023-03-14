@@ -28,10 +28,10 @@ router.route('/:c?')
             if (req.query.c) {
                 query = query.where('mail', 'like', `%${req.query.c}%`);
             }
-            
+
             let orderByColumn = 'livraison'; // par défaut, on trie selon la date
             if (req.query.sort === 'amount') {
-                orderByColumn = 'montant_total'; // si le paramètre sort vaut "amount", on trie selon le montant total
+                orderByColumn = 'montant'; // si le paramètre sort vaut "amount", on trie selon le montant total
             }
 
             const result = await query.orderBy(orderByColumn, 'desc');
