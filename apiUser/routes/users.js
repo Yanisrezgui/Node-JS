@@ -25,6 +25,8 @@ router.route('/signup')
     let username = req.body.username;
     let email = req.body.email;
     let password = req.body.password;
+
+    const hashPassword = bcrypt.hashSync(password, 10);
   
     // Vérifier si l'utilisateur existe déjà
     const user = await db('client').where({ mail_client }).first();
@@ -36,11 +38,11 @@ router.route('/signup')
     await db('client').insert({
         nom_client: username,
         mail_client: email,
-        passwd: bcrypt.hashSync(password, 10) 
+        passwd: bcrypt.hashSync(password, 10)
     });
   
     // Créer un access-token JWT
-    const secret = 'mysecretkey';
+    const secret = hashPassword;
 
     const payload = {
         user: username,
