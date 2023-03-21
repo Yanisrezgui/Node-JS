@@ -6,7 +6,7 @@ services:
     container_name: api_nodejs
     command: 'npm run watch'
     env_file:
-      - .env
+      - ./api/.env
     volumes:
       - ./api:/usr/src/app
     working_dir: /usr/src/app
@@ -22,7 +22,7 @@ services:
     ports:
       - 3306:3306
     env_file:
-      - ./.env
+      - ./api/.env
     networks:
       - docker-service
     volumes: 
@@ -33,6 +33,40 @@ services:
       - 8080:8080
     networks:
       - docker-service
+  auth:
+    image: node:alpine
+    container_name: auth_nodejs
+    command: 'npm run watch'
+    env_file:
+      - ./auth/.env
+    volumes:
+      - ./auth:/usr/src/app/auth
+    working_dir: /usr/src/app/auth
+    ports:
+      - 3334:3000
+    networks:
+      - service-auth
+    depends_on:
+      - dbauth
+  dbauth:
+    image: mariadb:latest
+    container_name: mariadb-auth
+    ports:
+      - 3307:3306
+    env_file:
+      - ./auth/.env
+    networks:
+      - service-auth
+    volumes: 
+      - ./data-auth:/data/dbauth
+  adminerauth:
+    image: adminer
+    ports:
+      - 8081:8080
+    networks:
+      - service-auth
 networks:
+  service-auth:
+    driver: bridge
   docker-service:
     driver: bridge
