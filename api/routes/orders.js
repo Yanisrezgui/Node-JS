@@ -88,9 +88,6 @@ router.route('/')
         }
     });
 
-
-
-
 router.route('/:id')
     .get(async (req, res, next) => {
         try {
@@ -222,6 +219,13 @@ router.route('/')
     .post(async (req, res, next) => {
         try {
             const id = uuidv4();
+            await db('commande').insert({
+                id: id,
+                nom: req.body.client_name,
+                mail: req.body.client_mail,
+                created_at: new Date(),
+                livraison: new Date(req.body.delivery.date + " " + req.body.delivery.time)
+            })
             const itemData = req.body.items.map(item => {
                 return {
                     uri: item.uri,
@@ -231,14 +235,7 @@ router.route('/')
                     command_id: id
                 }
             })
-            await db('item').insert(itemData);
-            db('commande').insert({
-                id: id,
-                nom: req.body.client_name,
-                mail: req.body.client_mail,
-                created_at: new Date(),
-                livraison: new Date(req.body.delivery.date + " " + req.body.delivery.time)
-            })
+            await db('item').insert(itemData)
                 .then(() => {
                     let total = 0;
                     req.body.items.forEach(item => {

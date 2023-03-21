@@ -6,7 +6,7 @@ services:
     container_name: api_nodejs
     command: 'npm run watch'
     env_file:
-      - ./api/.env
+      - db.env
     volumes:
       - ./api:/usr/src/app
     working_dir: /usr/src/app
@@ -22,11 +22,11 @@ services:
     ports:
       - 3306:3306
     env_file:
-      - ./api/.env
+      - ./db.env
     networks:
       - docker-service
-    volumes: 
-      - ./data:/data/db
+    volumes:
+      - ./data/api:/var/lib/mysql
   adminer:
     image: adminer
     ports:
@@ -44,6 +44,34 @@ services:
     working_dir: /usr/src/app/gateway
     ports:
       - 3001:3000
+      
+  apiUser:
+    image: node:alpine
+    container_name: api_user_nodejs
+    command: 'npm run watch'
+    env_file:
+      - usr.env
+    volumes:
+      - ./apiUser:/usr/src/app
+    working_dir: /usr/src/app
+    ports:
+      - 3330:3000
+    networks:
+      - docker-service
+    depends_on:
+      - dbUser
+  dbUser:
+    image: mariadb:latest
+    container_name: docker-user-mariadb
+    ports:
+      - 3308:3306
+    env_file:
+      - ./usr.env
+    networks:
+      - docker-service
+    volumes:
+      - ./data/usr:/var/lib/mysql
+
 networks:
   docker-service:
     driver: bridge
