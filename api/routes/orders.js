@@ -24,28 +24,69 @@ let db = knex({
 router.route('/')
     .get(async (req, res, next) => {
         try {
-            const result = await db('commande');
-
+            const LIMIT = 10;
+            let pageNumber = parseInt(req.query.page) || 1;
+            if (pageNumber < 1) {
+                pageNumber = 1;
+            }
+            const countResult = await db('commande').count('id as CNT').first();
+            const totalCount = parseInt(countResult.CNT);
+            const totalPages = Math.ceil(totalCount / LIMIT);
+            if (pageNumber > totalPages) {
+                pageNumber = totalPages;
+            }
+            const offset = (pageNumber - 1) * LIMIT;
+            let query = db('commande').orderBy('livraison', 'desc').limit(LIMIT).offset(offset);
+            if (req.query.c) {
+                query = query.where('mail', 'like', `%${req.query.c}%`);
+            }
+            if (req.query.sort === 'amount') {
+                query = query.orderBy('montant', 'desc');
+            }
+            const result = await query;
             if (!result) {
-
                 res.status(404).json({
                     "type": "error",
                     "error": 404,
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-                res.json(result);
+                const orderResult = result.map(order => {
+                    return {
+                        "order": {
+                            "id": order.id,
+                            "client_name": order.nom,
+                            "order_date": order.created_at,
+                            "delivery_date": order.livraison,
+                            "status": order.status
+                        },
+                        "links": {
+                            "self": { "href": "orders/" + order.id }
+                        }
+                    }
+                });
+                const jsonResult = {
+                    "type": "collection",
+                    "count": totalCount,
+                    "size": result.length,
+                    "links": {
+                        "first": { "href": `/orders?page=1` },
+                        "prev": pageNumber > 1 ? { "href": `/orders?page=${pageNumber - 1}` } : "aucune page disponible",
+                        "next": pageNumber < totalPages ? { "href": `/orders?page=${pageNumber + 1}` } : "aucune page disponible",
+                        "last": { "href": `/orders?page=${totalPages}` }
+                    },
+                    "orders": orderResult
+                };
+                res.json(jsonResult);
             }
         } catch (error) {
             res.json({
                 "type": "error",
                 "error": 500,
                 "message": "Erreur interne du serveur"
-            })
-
+            });
         }
-
-    })
+    });
 
 router.route('/:id')
     .get(async (req, res, next) => {
@@ -58,11 +99,11 @@ router.route('/:id')
                     "message": "ressource non disponible : /orders/" + req.params.id
                 });
             } else {
-                if (req.query.embed === "items" ) {
+                if (req.query.embed === "items") {
                     const resultItem = await db('item').where('command_id', req.params.id);
                     result.items = resultItem;
                 }
-                
+
                 let json = {
                     "type": "ressource",
                     "order": result,
@@ -174,12 +215,12 @@ router.route('/modified/:id')
 router.route('/')
     .post(async (req, res, next) => {
         try {
-            const id = uuidv4(); 
-            await db('commande').insert({ 
-                id:id, 
-                nom: req.body.client_name, 
-                mail: req.body.client_mail, 
-                created_at: new Date(), 
+            const id = uuidv4();
+            await db('commande').insert({
+                id: id,
+                nom: req.body.client_name,
+                mail: req.body.client_mail,
+                created_at: new Date(),
                 livraison: new Date(req.body.delivery.date + " " + req.body.delivery.time)
             })
             const itemData = req.body.items.map(item => {
@@ -192,26 +233,26 @@ router.route('/')
                 }
             })
             await db('item').insert(itemData)
-            .then(() => {
-                let total = 0;
-                req.body.items.forEach(item => {
-                    total += item.q * item.price;
-                });
-                
-                let json = {
-                    "order": {
-                        "client_name": req.body.client_name,
-                        "client_mail": req.body.client_mail,
-                        "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
-                        "id": id,
-                        "total_amount": total
-                    },
-                }
-                res.location('/orders/' + id)
-                res.status(201).json(json);
-            }).catch((err) => {
-                res.json(err);
-            })
+                .then(() => {
+                    let total = 0;
+                    req.body.items.forEach(item => {
+                        total += item.q * item.price;
+                    });
+
+                    let json = {
+                        "order": {
+                            "client_name": req.body.client_name,
+                            "client_mail": req.body.client_mail,
+                            "delivery_date": req.body.delivery.date + " " + req.body.delivery.time,
+                            "id": id,
+                            "total_amount": total
+                        },
+                    }
+                    res.location('/orders/' + id)
+                    res.status(201).json(json);
+                }).catch((err) => {
+                    res.json(err);
+                })
         } catch (error) {
             res.status(500).json({
                 "type": "error",
