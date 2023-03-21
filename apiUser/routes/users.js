@@ -29,7 +29,7 @@ router.route('/signup')
     const hashPassword = bcrypt.hashSync(password, 10);
   
     // Vérifier si l'utilisateur existe déjà
-    const user = await db('client').where({ mail_client }).first();
+    const user = await db('client').where('mail_client', email ).first();
     if (user) {
       return res.status(409).json({ message: 'Cet utilisateur existe déjà' });
     }
