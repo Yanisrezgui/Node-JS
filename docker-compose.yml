@@ -11,7 +11,7 @@ services:
       - ./api:/usr/src/app
     working_dir: /usr/src/app
     ports:
-      - 3333:3000
+      - 3333:3000 
     networks:
       - docker-service
     depends_on:
@@ -26,7 +26,7 @@ services:
     networks:
       - docker-service
     volumes: 
-      - ./data:/data/db
+      - ./data:/var/lib/mysql
   adminer:
     image: adminer
     ports:
@@ -44,6 +44,11 @@ services:
     working_dir: /usr/src/app/gateway
     ports:
       - 3001:3000
+    links:
+      - api
+      - auth
+    networks:
+      - docker-service
 networks:
   docker-service:
     driver: bridge
