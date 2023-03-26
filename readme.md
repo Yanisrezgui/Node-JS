@@ -1,4 +1,4 @@
-Contributor :
+Contributors :
 
 Dal Bon Quentin, Alban Kuntz, Yanis Rezgui, Damien Welfringer
 
