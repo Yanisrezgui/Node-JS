@@ -57,10 +57,10 @@ router.route('/signin')
             } else {
             
                 const payload = {
-                    user: username,
+                    user: user.nom_client,
+                    email: username,
                     role: 'user'
                 }
-            
                 const options = {
                     expiresIn: '1h'
                 };

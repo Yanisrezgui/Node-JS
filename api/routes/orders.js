@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid'); // importe la fonction uuid()
 
 const nameSchema = Joi.string().alphanum().min(3).max(30).required();
 const emailSchema = Joi.string().email().required();
-const dateSchema = Joi.date().iso().required();
+const dateSchema = Joi.date().iso().greater('now').required();
 const uuidSchema = Joi.string().guid().required();
 
 //connectiondb

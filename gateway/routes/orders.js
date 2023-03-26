@@ -48,61 +48,41 @@ router.route('/:id/items')
 }); 
     
 
-
-
-/* GET users listing. */
-router.post('/', function (req, res, next) {
-
-
-
+/* POST create order */
+router.post('/', async function (req, res, next) {
   // controle et validation token JWT
+  try {
+    const response = await fetch('http://apiUser:3000/users/validate', { headers: { 'Authorization': `${req.headers.authorization}` } });
+    if (response.status == 401) {
+      return res.status(401).json({
+        "type": "error",
+        "error": 401,
+        "message": "invalid credentials"
+      });
+    } else {
+      const data = await response.json(); // Attendre que la promesse soit résolue
+      let json = { "client_mail": data.email, "client_name": data.user, "delivery": req.body.delivery, "items": req.body.items }
+      const create = await fetch('http://api:3000/orders', { method: 'POST', body: JSON.stringify(json), headers: { 'Content-Type': 'application/json' } })
+      if (create.status == 201 || create.status == 200) {
 
-  fetch('http://localhost:3330/users/validate', {headers: {'Authorization': `Bearer ${req.headers.authorization}`}})
-  .then(res => res.json())
-  .then(data => res.json(data))
+        const d = await create.json()
+        let loc = create.headers.get('location')
 
-
-  //validation des données de la commande
-
-  // let name = nameSchema.validate(req.body.order.name);
-  // let email = emailSchema.validate(req.body.order.email);
-  // let date = dateSchema.validate(req.body.order.date);
-  // const id = uuidv4();
-
-
-  // if (name.error != null) {
-  //   res.status(404).json({
-  //     "type": "error",
-  //     "error": 404,
-  //     "message": "données non comformes : " + req.body.order.name
-  //   });
-  // } else if (email.error != null) {
-  //   res.status(404).json({
-  //     "type": "error",
-  //     "error": 404,
-  //     "message": "données non comformes : " + req.body.order.email
-  //   });
-  // } else if (date.error != null) {
-  //   res.status(404).json({
-  //     "type": "error",
-  //     "error": 404,
-  //     "message": "données non comformes : " + req.body.order.date
-  //   });
-  // }
-
-  //Faire un POST avec les données du body vsers /oders et c'est lui qui traite le système
-  // let json = {
-  //   "order": {
-  //     "id": id,
-  //     "client_name": name,
-  //     "order_date": Date(),
-  //     "delivery_date": date,
-  //     "status": 3
-  //   }, 
-  //   "links": { 
-  //     "self": { 
-  //       "href": "orders/"+id } }
-  // }
+        res.location(loc)
+        res.status(201).json(d);
+      } else {
+        console.log(create)
+        res.status(400).json({
+          "type": "error",
+          "error": 400,
+          "message": "bad request"
+        })
+      }
+    }
+  } catch (error) {
+    console.error(error)
+    next(error)
+  }
 });
 
 module.exports = router;
