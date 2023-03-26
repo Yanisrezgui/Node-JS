@@ -1,3 +1,8 @@
+Contributor :
+
+DAL BON Quentin, Alban Kuntz, Yanis Rezgui, Damien Welfringer
+
+
 # NodeJS-TD
 
 ## Install dependencies
